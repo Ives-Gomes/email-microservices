@@ -16,19 +16,22 @@ app.get('/', async (req, res) => {
 
 	const admin = kafka.admin()
 	const consumer = kafka.consumer({ groupId: '1' }) // verify group
+	const data = await consumer.describeGroup()
+
+	console.log(data)
 
 	await admin.connect()
 	await consumer.connect()
 
-	await consumer.subscribe({ topic: 'kafka-topic', fromBeginning: true })
+	// await consumer.subscribe({ topic: 'kafka-topic', fromBeginning: true })
 
-	await consumer.run({
-		eachMessage: async ({ topic, partition, message }) => {
-			console.log({
-				value: message.value?.toString(),
-			})
-		},
-	})
+	// await consumer.run({
+	// 	eachMessage: async ({ topic, partition, message }) => {
+	// 		console.log({
+	// 			value: message.value?.toString(),
+	// 		})
+	// 	},
+	// })
 
 	await admin.disconnect()
 

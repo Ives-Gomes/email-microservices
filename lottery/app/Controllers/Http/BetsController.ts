@@ -1,5 +1,6 @@
 import type { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
 import Database from '@ioc:Adonis/Lucid/Database'
+import { Kafka } from 'kafkajs'
 
 import Bet from 'App/Models/Bet'
 import Game from 'App/Models/Game'
@@ -91,17 +92,46 @@ export default class GamesController {
         return response.badRequest({ message: 'Error in create bet', originalError: error.message })
       }
 
-      // try {
-      //   const user = await User.query().where('id', userAuthenticated).firstOrFail()
+      const kafka = new Kafka({
+        clientId: 'lottery',
+        brokers: ['localhost:9092'],
+        enforceRequestTimeout: false
+      })
 
-      //   await sendCreatedBetMail(user, betCreated, 'email/created_bet')
-      // } catch (error) {
-      //   trx.rollback()
-      //   return response.badRequest({
-      //     message: 'Error in send created bet email',
-      //     originalError: error.message,
-      //   })
-      // }
+      const admin = kafka.admin()
+      const producer = kafka.producer()
+
+      await admin.connect()
+      await producer.connect()
+
+      await admin.createTopics({
+        validateOnly: false,
+        waitForLeaders: true,
+        timeout: 15000,
+        topics: [{
+          topic: 'kafka-topic',
+          numPartitions: -1,
+          replicationFactor: -1,
+          replicaAssignment: [],
+          configEntries: []
+        }],
+      })
+
+      const responseKafka = await admin.listTopics()
+
+      console.log(responseKafka)
+
+      const kafkaResponse = await producer.send({
+        topic: 'kafka-topic',
+        messages: [
+          { value: 'Hello KafkaJS user!' },
+        ],
+      })
+
+      console.log(kafkaResponse)
+
+      await producer.disconnect()
+      await admin.disconnect()
 
       trx.commit()
 

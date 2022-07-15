@@ -63,6 +63,7 @@
     "adonis-lucid-filter": "^4.1.0",
     "adonis5-scheduler": "^2.0.2",
     "dayjs": "^1.11.3",
+    "kafkajs": "^2.1.0",
     "luxon": "^2.4.0",
     "mysql": "^2.18.1",
     "phc-argon2": "^1.1.3",
