@@ -109,8 +109,8 @@ export default class GamesController {
         waitForLeaders: true,
         timeout: 15000,
         topics: [{
-          topic: 'kafka-topic',
-          numPartitions: -1,
+          topic: 'kafka-topic-1',
+          numPartitions: 6,
           replicationFactor: -1,
           replicaAssignment: [],
           configEntries: []
@@ -122,9 +122,9 @@ export default class GamesController {
       console.log(responseKafka)
 
       const kafkaResponse = await producer.send({
-        topic: 'kafka-topic',
+        topic: 'kafka-topic-1',
         messages: [
-          { value: 'Hello KafkaJS user!' },
+          { key: '1', value: 'Welcome to KAFKA!', partition: 0 },
         ],
       })
 

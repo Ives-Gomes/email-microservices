@@ -9,60 +9,51 @@ app.use(express.json());
 const port = 3334;
 
 app.get('/', async (req, res) => {
-	const kafka = new Kafka({
-		clientId: 'ms-emails',
-		brokers: ['localhost:9092'],
-	})
+	try {
+    const kafka = new Kafka({
+      clientId: 'ms-emails',
+      brokers: ['localhost:9092'],
+    })
 
-	const admin = kafka.admin()
-	const consumer = kafka.consumer({ groupId: '1' }) // verify group
-	const data = await consumer.describeGroup()
+    const consumer = kafka.consumer({groupId: 'kafka_1'});
+  
+    await consumer.connect();
+  
+    await consumer.subscribe({ topic: 'kafka-topic-1', fromBeginning: true });
 
-	console.log(data)
+    await consumer.run({
+      eachMessage: async ({ topic, partition, message }) => {
+				const transport = nodemailer.createTransport({
+					host: "smtp.mailtrap.io",
+					port: 2525,
+					auth: {
+						user: "0d65f13fede99c",
+						pass: "750e45bf5e202a"
+					}
+				});
 
-	await admin.connect()
-	await consumer.connect()
+				const mailOptions = {
+					from: 'no-reply@ms-emails.com',
+					to: 'sender@email.com',
+					subject: 'E-mail enviado usando KAFKA!',
+					html: `<p>${message.value?.toString()}</p>`
+				};
 
-	// await consumer.subscribe({ topic: 'kafka-topic', fromBeginning: true })
+				transport.sendMail(mailOptions, function (error, info) {
+					if (error) {
+						console.log(error);
+						return res.status(400).send({ message: 'Falha no envio do email' })
+					} else {
+						console.log('Email enviado: ' + info.response);
+					}
+				});
+      },
+    })
+  } catch (err) {
+    return res.status(500).send(err);
+  }
 
-	// await consumer.run({
-	// 	eachMessage: async ({ topic, partition, message }) => {
-	// 		console.log({
-	// 			value: message.value?.toString(),
-	// 		})
-	// 	},
-	// })
-
-	await admin.disconnect()
-
-	return res.send()
-
-	// const transport = nodemailer.createTransport({
-	// 	host: "smtp.mailtrap.io",
-	// 	port: 2525,
-	// 	auth: {
-	// 		user: "0d65f13fede99c",
-	// 		pass: "750e45bf5e202a"
-	// 	}
-	// });
-
-	// const mailOptions = {
-	// 	from: 'no-reply@ms-emails.com',
-	// 	to: 'sender@email.com',
-	// 	subject: 'E-mail enviado usando Node!',
-	// 	html: '<p>Bem fácil, não? ;)</p>'
-	// };
-
-	// transport.sendMail(mailOptions, function (error, info) {
-	// 	if (error) {
-	// 		console.log(error);
-	// 		return res.status(400).send({ message: 'Falha no envio do email' })
-	// 	} else {
-	// 		console.log('Email enviado: ' + info.response);
-	// 	}
-	// });
-
-	return res.status(200).send({ message: 'E-mail enviado com sucesso!' })
+	return res.status(200).send({ message: 'E-mail enviado com sucesso!' });
 });
 
 app.listen(port);
